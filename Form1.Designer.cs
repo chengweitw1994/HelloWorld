@@ -32,7 +32,11 @@
             this.tx_sendMessage = new System.Windows.Forms.TextBox();
             this.gb_sendMessage = new System.Windows.Forms.GroupBox();
             this.btn_clearConsole = new System.Windows.Forms.Button();
+            this.gb_serverControl = new System.Windows.Forms.GroupBox();
+            this.btn_startServer = new System.Windows.Forms.Button();
+            this.btn_shutdownServer = new System.Windows.Forms.Button();
             this.gb_sendMessage.SuspendLayout();
+            this.gb_serverControl.SuspendLayout();
             this.SuspendLayout();
             // 
             // btn_sendMessage
@@ -76,17 +80,53 @@
             this.btn_clearConsole.UseVisualStyleBackColor = true;
             this.btn_clearConsole.Click += new System.EventHandler(this.btn_clearConsole_Click);
             // 
+            // gb_serverControl
+            // 
+            this.gb_serverControl.Controls.Add(this.btn_shutdownServer);
+            this.gb_serverControl.Controls.Add(this.btn_startServer);
+            this.gb_serverControl.Font = new System.Drawing.Font("微軟正黑體", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.gb_serverControl.Location = new System.Drawing.Point(18, 114);
+            this.gb_serverControl.Name = "gb_serverControl";
+            this.gb_serverControl.Size = new System.Drawing.Size(279, 77);
+            this.gb_serverControl.TabIndex = 6;
+            this.gb_serverControl.TabStop = false;
+            this.gb_serverControl.Text = "Server Control";
+            // 
+            // btn_startServer
+            // 
+            this.btn_startServer.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btn_startServer.Location = new System.Drawing.Point(6, 28);
+            this.btn_startServer.Name = "btn_startServer";
+            this.btn_startServer.Size = new System.Drawing.Size(114, 36);
+            this.btn_startServer.TabIndex = 7;
+            this.btn_startServer.Text = "Start";
+            this.btn_startServer.UseVisualStyleBackColor = true;
+            this.btn_startServer.Click += new System.EventHandler(this.btn_startServer_Click);
+            // 
+            // btn_shutdownServer
+            // 
+            this.btn_shutdownServer.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btn_shutdownServer.Location = new System.Drawing.Point(126, 28);
+            this.btn_shutdownServer.Name = "btn_shutdownServer";
+            this.btn_shutdownServer.Size = new System.Drawing.Size(136, 36);
+            this.btn_shutdownServer.TabIndex = 7;
+            this.btn_shutdownServer.Text = "Shutdown";
+            this.btn_shutdownServer.UseVisualStyleBackColor = true;
+            this.btn_shutdownServer.Click += new System.EventHandler(this.btn_shutdownServer_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(634, 247);
+            this.Controls.Add(this.gb_serverControl);
             this.Controls.Add(this.btn_clearConsole);
             this.Controls.Add(this.gb_sendMessage);
             this.Name = "Form1";
             this.Text = "Form1";
             this.gb_sendMessage.ResumeLayout(false);
             this.gb_sendMessage.PerformLayout();
+            this.gb_serverControl.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -97,5 +137,8 @@
         private TextBox tx_sendMessage;
         private GroupBox gb_sendMessage;
         private Button btn_clearConsole;
+        private GroupBox gb_serverControl;
+        private Button btn_shutdownServer;
+        private Button btn_startServer;
     }
 }
