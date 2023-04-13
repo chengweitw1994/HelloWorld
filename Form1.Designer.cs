@@ -31,6 +31,7 @@
             this.btn_sendMessage = new System.Windows.Forms.Button();
             this.tx_sendMessage = new System.Windows.Forms.TextBox();
             this.gb_sendMessage = new System.Windows.Forms.GroupBox();
+            this.btn_clearConsole = new System.Windows.Forms.Button();
             this.gb_sendMessage.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -43,6 +44,7 @@
             this.btn_sendMessage.TabIndex = 0;
             this.btn_sendMessage.Text = "發送訊息";
             this.btn_sendMessage.UseVisualStyleBackColor = true;
+            this.btn_sendMessage.Click += new System.EventHandler(this.btn_sendMessage_Click);
             // 
             // tx_sendMessage
             // 
@@ -63,11 +65,23 @@
             this.gb_sendMessage.TabStop = false;
             this.gb_sendMessage.Text = "發送訊息";
             // 
+            // btn_clearConsole
+            // 
+            this.btn_clearConsole.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btn_clearConsole.Location = new System.Drawing.Point(508, 199);
+            this.btn_clearConsole.Name = "btn_clearConsole";
+            this.btn_clearConsole.Size = new System.Drawing.Size(114, 36);
+            this.btn_clearConsole.TabIndex = 5;
+            this.btn_clearConsole.Text = "Clear";
+            this.btn_clearConsole.UseVisualStyleBackColor = true;
+            this.btn_clearConsole.Click += new System.EventHandler(this.btn_clearConsole_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(604, 130);
+            this.ClientSize = new System.Drawing.Size(634, 247);
+            this.Controls.Add(this.btn_clearConsole);
             this.Controls.Add(this.gb_sendMessage);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -82,5 +96,6 @@
         private Button btn_sendMessage;
         private TextBox tx_sendMessage;
         private GroupBox gb_sendMessage;
+        private Button btn_clearConsole;
     }
 }
