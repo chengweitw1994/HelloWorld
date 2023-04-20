@@ -1,14 +1,10 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
-using System.Net.Sockets;
+﻿using MySocketServer.Domain;
 
 namespace MySocketServer
 {
     public partial class Form1 : Form
     {
-        private static CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private static TcpListener? server = null;
-        private static ConcurrentBag<Task> tasks = new ConcurrentBag<Task>();
+        private SocketSvr? _server;
 
         public Form1()
         {
@@ -62,13 +58,12 @@ namespace MySocketServer
             string message = "嘗試啟動Server";
             Console.WriteLine(ConsoleMessageTemplate(message));
 
-            if (server is not null) return;
+            if (_server is not null) return;
 
             try
             {
-                IPAddress ipAddress = IPAddress.Parse(ServerIp);
-
-                //server = new TcpListener(ipAddress, ServerPort);
+                _server = new SocketSvr(ServerIp, ServerPort);
+                _server.Start();
             }
             catch (Exception ex)
             {
@@ -85,6 +80,18 @@ namespace MySocketServer
         {
             string message = "嘗試關閉Server";
             Console.WriteLine(ConsoleMessageTemplate(message));
+
+            if (_server is null) return;
+
+            try
+            {
+                var task = Task.Run(() => _server.Shutdown());
+                task.Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ConsoleMessageTemplate(ex.Message));
+            }
         }
     }
 }
