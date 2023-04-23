@@ -4,11 +4,14 @@ namespace MySocketServer
 {
     public partial class Form1 : Form
     {
-        private SocketSvr? _server;
+        private readonly SocketSvr? _server;
 
         public Form1()
         {
             InitializeComponent();
+
+            // TODO
+            _server = new SocketSvr(ServerIp, ServerPort);
         }
 
         /// <summary>
@@ -58,12 +61,9 @@ namespace MySocketServer
             string message = "嘗試啟動Server";
             Console.WriteLine(ConsoleMessageTemplate(message));
 
-            if (_server is not null) return;
-
             try
             {
-                _server = new SocketSvr(ServerIp, ServerPort);
-                _server.Start();
+                _server?.Start();
             }
             catch (Exception ex)
             {
