@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Sockets;
 
 namespace MySocketServer.Domain
 {
@@ -9,7 +10,8 @@ namespace MySocketServer.Domain
         private readonly IPAddress _ipAddress;
         private CancellationTokenSource? _cancellationTokenSource;
         private ConcurrentBag<Task>? _tasks;
-        //private TcpListener? _tcpListener;
+        private TcpListener? _tcpListener;
+        private ConcurrentBag<TcpClient> _tcpClients;
         public string IP { get; private set; }
         public int Port { get; private set; }
 
@@ -37,34 +39,29 @@ namespace MySocketServer.Domain
                 _tasks = new ConcurrentBag<Task>();
 
                 #region background task
-                Task task;
-                task = Task.Run(() => DoSomething("背景程式1", _cancellationTokenSource.Token), _cancellationTokenSource.Token);
-                _tasks.Add(task);
-
-                task = Task.Run(() =>
-                {
-                    // Create some cancelable child tasks.
-                    Task tc;
-                    for (int i = 3; i <= 10; i++)
-                    {
-                        // For each child task, pass the same token
-                        // to each user delegate and to Task.Run.
-                        tc = Task.Run(() => DoSomething($"背景程式{i}", _cancellationTokenSource.Token), _cancellationTokenSource.Token);
-                        Console.WriteLine("Task {0} executing", tc.Id);
-                        _tasks.Add(tc);
-                        // Pass the same token again to do work on the parent task.
-                        // All will be signaled by the call to tokenSource.Cancel below.
-                        DoSomething("背景程式2", _cancellationTokenSource.Token);
-                    }
-                }, _cancellationTokenSource.Token);
-                _tasks.Add(task);
+                _tasks.Add(
+                    Task.Run(() =>
+                    DoSomething("背景程式 A", _cancellationTokenSource.Token), _cancellationTokenSource.Token));
                 #endregion
 
                 // TODO: if tcpListener is open then close it.
-                //_tcpListener = new TcpListener(_ipAddress, Port);
-                //_tcpListener.Start();
+                _tcpListener = new TcpListener(_ipAddress, Port);
+                _tcpListener.Start();
 
                 StartedSuccessfully();
+
+                while (true)
+                {
+                    Console.Write("Waiting for a connection... ");
+
+                    // Perform a blocking call to accept requests.
+                    // You could also use server.AcceptSocket() here.
+                    TcpClient tcpClient = _tcpListener.AcceptTcpClient();
+                    Console.WriteLine("Connected!");
+                    _tcpClients.Add(tcpClient);
+
+                    Task.Run(() => MyHandler(tcpClient));
+                }
             }
             catch (Exception ex)
             {
@@ -102,7 +99,7 @@ namespace MySocketServer.Domain
             {
                 _state = ServerStateEnum.OnClosing;
 
-                //_tcpListener?.Stop();
+                _tcpListener?.Stop();
 
                 _cancellationTokenSource?.Cancel();
 
@@ -188,7 +185,7 @@ namespace MySocketServer.Domain
         }
         #endregion
 
-        static void DoSomething(string taskName, CancellationToken ct)
+        private async Task DoSomething(string taskName, CancellationToken ct)
         {
             // Was cancellation already requested?
             if (ct.IsCancellationRequested)
@@ -198,47 +195,42 @@ namespace MySocketServer.Domain
                 ct.ThrowIfCancellationRequested();
             }
 
-            int maxIterations = 100;
-
-            // NOTE!!! A "TaskCanceledException was unhandled
-            // by user code" error will be raised here if "Just My Code"
-            // is enabled on your computer. On Express editions JMC is
-            // enabled and cannot be disabled. The exception is benign.
-            // Just press F5 to continue executing your code.
-            for (int i = 0; i <= maxIterations; i++)
+            while (true)
             {
-                Random random = new Random(Guid.NewGuid().GetHashCode());
-                int bombNumber = random.Next(0, 100);
+                await Task.Delay(1000, ct);
 
-                // Do a bit of work. Not too much.
-                var sw = new SpinWait();
-                for (int j = 0; j <= 100; j++)
-                {
-
-                    if (j == bombNumber)
-                    {
-                        string bombMessage = $"Task {taskName} bomb at {i} {bombNumber}";
-                        Console.WriteLine(bombMessage);
-
-                        //throw new Exception(bombMessage);
-                    }
-
-                    Console.WriteLine("Task {0} do something {1} {2}", taskName, i, j);
-                    sw.SpinOnce();
-
-                    if (ct.IsCancellationRequested)
-                    {
-                        Console.WriteLine("Task {0} cancelled", taskName);
-                        ct.ThrowIfCancellationRequested();
-                    }
-                }
-
+                Console.WriteLine("Task {0} 工作中...", taskName);
 
                 if (ct.IsCancellationRequested)
                 {
-                    Console.WriteLine("Task {0} cancelled", taskName);
+                    Console.WriteLine("Task {0} 已取消", taskName);
                     ct.ThrowIfCancellationRequested();
                 }
+            }
+        }
+
+        private void MyHandler(TcpClient tcpClient)
+        {
+            // Buffer for reading data
+            Byte[] bytes = new Byte[256];
+            string data;
+            int i;
+
+            // Get a stream object for reading and writing
+            using NetworkStream stream = tcpClient.GetStream();
+
+            // Loop to receive all the data sent by the client.
+            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                // Translate data bytes to a ASCII string.
+                data = System.Text.Encoding.UTF8.GetString(bytes, 0, i);
+                Console.WriteLine("[Received]: {0}", data);
+
+                byte[] msg = System.Text.Encoding.UTF8.GetBytes(string.Format("我是Server, 我聽到你說: {0}", data));
+
+                // Send back a response.
+                stream.Write(msg, 0, msg.Length);
+                Console.WriteLine("[Sent]: {0}", data);
             }
         }
     }
