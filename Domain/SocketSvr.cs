@@ -9,9 +9,9 @@ namespace MySocketServer.Domain
         private ServerStateEnum _state = ServerStateEnum.OutOfService;
         private readonly IPAddress _ipAddress;
         private CancellationTokenSource? _cancellationTokenSource;
-        private ConcurrentBag<Task>? _tasks;
+        private ConcurrentBag<Task>? _taskList;
         private TcpListener? _tcpListener;
-        private ConcurrentBag<TcpClient> _tcpClients;
+        private ConcurrentBag<TcpClient>? _tcpClientList;
         public string IP { get; private set; }
         public int Port { get; private set; }
 
@@ -36,13 +36,15 @@ namespace MySocketServer.Domain
                 _state = ServerStateEnum.OnStarting;
 
                 _cancellationTokenSource = new CancellationTokenSource();
-                _tasks = new ConcurrentBag<Task>();
+                _taskList = new ConcurrentBag<Task>();
 
                 #region background task
-                _tasks.Add(
+                _taskList.Add(
                     Task.Run(() =>
                     DoSomething("背景程式 A", _cancellationTokenSource.Token), _cancellationTokenSource.Token));
                 #endregion
+
+                _tcpClientList = new ConcurrentBag<TcpClient>();
 
                 // TODO: if tcpListener is open then close it.
                 _tcpListener = new TcpListener(_ipAddress, Port);
@@ -50,18 +52,7 @@ namespace MySocketServer.Domain
 
                 StartedSuccessfully();
 
-                while (true)
-                {
-                    Console.Write("Waiting for a connection... ");
-
-                    // Perform a blocking call to accept requests.
-                    // You could also use server.AcceptSocket() here.
-                    TcpClient tcpClient = _tcpListener.AcceptTcpClient();
-                    Console.WriteLine("Connected!");
-                    _tcpClients.Add(tcpClient);
-
-                    Task.Run(() => MyHandler(tcpClient));
-                }
+                Task.Run(() => AcceptIncomingTcpClient(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
             }
             catch (Exception ex)
             {
@@ -103,8 +94,8 @@ namespace MySocketServer.Domain
 
                 _cancellationTokenSource?.Cancel();
 
-                if (_tasks is not null)
-                    await Task.WhenAll(_tasks.ToArray());
+                if (_taskList is not null)
+                    await Task.WhenAll(_taskList.ToArray());
 
                 ShutdownSuccessfully();
             }
@@ -127,13 +118,19 @@ namespace MySocketServer.Domain
             }
 
             // Display status of all tasks.
-            if (_tasks is not null)
+            if (_taskList is not null)
             {
-                foreach (var task in _tasks)
+                foreach (var task in _taskList)
                     Console.WriteLine("Task {0} status is now {1}", task.Id, task.Status);
 
-                _tasks?.Clear();
+                _taskList.Clear();
             }
+
+            if (_tcpClientList is not null)
+            {
+                _tcpClientList.Clear();
+            }
+
         }
 
         /// <summary>
@@ -209,7 +206,39 @@ namespace MySocketServer.Domain
             }
         }
 
-        private void MyHandler(TcpClient tcpClient)
+        private async Task AcceptIncomingTcpClient(CancellationToken ct)
+        {
+            // Was cancellation already requested?
+            if (ct.IsCancellationRequested)
+            {
+                Console.WriteLine("Task {0} was cancelled before it got started.",
+                                  nameof(AcceptIncomingTcpClient));
+                ct.ThrowIfCancellationRequested();
+            }
+
+            while (true)
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    Console.WriteLine("Task {0} 已取消", nameof(AcceptIncomingTcpClient));
+                    ct.ThrowIfCancellationRequested();
+                }
+                if (_tcpListener is null) break;
+                if (_tcpClientList is null) break;
+
+                Console.WriteLine("Task {0} 工作中...", nameof(AcceptIncomingTcpClient));
+
+                Console.WriteLine("Waiting for a connection... ");
+
+                var tcpClient = await _tcpListener.AcceptTcpClientAsync(ct);
+                Console.WriteLine("Connected!");
+                _tcpClientList.Add(tcpClient);
+
+                _ = Task.Run(() => MyHandler(tcpClient, ct), ct);
+            }
+        }
+
+        private async Task MyHandler(TcpClient tcpClient, CancellationToken ct)
         {
             // Buffer for reading data
             Byte[] bytes = new Byte[256];
@@ -220,9 +249,9 @@ namespace MySocketServer.Domain
             using NetworkStream stream = tcpClient.GetStream();
 
             // Loop to receive all the data sent by the client.
-            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+            while ((i = await stream.ReadAsync(bytes, 0, bytes.Length, ct)) != 0)
             {
-                // Translate data bytes to a ASCII string.
+                // Translate data bytes to a UTF8 string.
                 data = System.Text.Encoding.UTF8.GetString(bytes, 0, i);
                 Console.WriteLine("[Received]: {0}", data);
 
