@@ -12,7 +12,15 @@ namespace MySocketServer.Domain
         private ConcurrentBag<Task>? _taskList;
         private TcpListener? _tcpListener;
         private ConcurrentBag<TcpClient>? _tcpClientList;
+
+        /// <summary>
+        /// Server 監聽的 IP 位址
+        /// </summary>
         public string IP { get; private set; }
+
+        /// <summary>
+        /// Server 監聽的埠號
+        /// </summary>
         public int Port { get; private set; }
 
         public SocketSvr(string ip, int port)
@@ -22,6 +30,9 @@ namespace MySocketServer.Domain
             _ipAddress = IPAddress.Parse(IP);
         }
 
+        /// <summary>
+        /// 是否可啟動
+        /// </summary>
         private bool _canStart => _state == ServerStateEnum.OutOfService;
 
         /// <summary>
@@ -182,6 +193,12 @@ namespace MySocketServer.Domain
         }
         #endregion
 
+        /// <summary>
+        /// 模擬持續作業的背景程式
+        /// </summary>
+        /// <param name="taskName"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         private async Task DoSomething(string taskName, CancellationToken ct)
         {
             // Was cancellation already requested?
